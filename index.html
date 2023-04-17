@@ -109,14 +109,14 @@
     let check = mycookie.exec(document.cookie);
     if (null === check) {
         document.cookie = `form_user_id=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
-        console.log(document.cookie);
+        let fuid = document.getElementById("fuid");
+        fuid.value = uuid;
     } else {
 
     }
     //document.cookie = `user_id=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
 
-    let fuid = document.getElementById("fuid");
-    fuid.value = check[1];
+    
 
     let fqc = document.getElementById("form-questions-container");
 
