@@ -1,15 +1,224 @@
-<form
-  action="https://formspree.io/f/mpzeodwr"
-  method="POST"
->
-  <label>
-    Your email:
-    <input type="email" name="email">
-  </label>
-  <label>
-    Your message:
-    <textarea name="message"></textarea>
-  </label>
-  <!-- your other form fields go here -->
-  <button type="submit">Send</button>
-</form>
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        #form-container {
+            display: flex;
+            align-items: center;
+        }
+
+        #form-body {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        #form-questions-container {
+            width: 50%;
+            display: flex;
+            align-self: center;
+        }
+
+        #form-questions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        
+        #form-footer {
+            display:flex;
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        #form-bio {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #form-questions.label {
+            background-color: cyan;
+        }
+
+        #check-modal {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            top: 0;
+            left: 0;
+            position: absolute;
+            width: 100%;
+            min-height: 100vh;
+            visibility: hidden;
+            background-color: rgba(200, 200, 200, 0.7);
+        }
+
+        select {
+
+            width: 25%;
+            margin-bottom: 3%;
+        }
+    </style>
+</head>
+
+<body>
+    <form id="_form" enctype="multipart/form-data" method="POST"
+        action="https://script.google.com/macros/s/AKfycbwj7YDErOBfejzqm-qYJ5tzMkpEhNhQOYijDvqTi4L7e9-vG28RcyLV6V7aQJKvLjHWbA/exec">
+        <div id="form-container">
+            <div id="form-body">
+                <div id="form-footer">
+                <div id="form-bio">
+                <label>ФИО</label>
+                <input name="username" required>
+                <input id="fuid" name="form_user_id" hidden required>
+                </div>
+                <div id="form-name">
+                Название предмета
+                </div>
+                </div>
+
+                <input id="sbutton" type="submit" disabled>
+                <div id="form-questions-container">
+                    <div id="form-questions">
+                    </div>
+                </div>
+                <input id="gbutton" value="get" type="button" onClick="genForm()">
+            </div>
+        </div>
+    </form>
+    <div id="check-modal">
+        <h3>Отправить?</h3>
+        <div>
+            <button onClick="submitForm()">Да</button>
+            <button onClick="closeForm()">Нет</button>
+        </div>
+    </div>
+</body>
+
+<script>
+
+    let addr = "https://script.google.com/macros/s/AKfycbwj7YDErOBfejzqm-qYJ5tzMkpEhNhQOYijDvqTi4L7e9-vG28RcyLV6V7aQJKvLjHWbA/exec";
+
+    let uuid = crypto.randomUUID();
+    let mycookie = /form_user_id=(.+)(?:[\s]|$)/gm;
+    let check = mycookie.exec(document.cookie);
+    if (null === check) {
+        document.cookie = `form_user_id=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
+        console.log(document.cookie);
+    } else {
+
+    }
+    //document.cookie = `user_id=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
+
+    let fuid = document.getElementById("fuid");
+    fuid.value = check[1];
+
+    let fqc = document.getElementById("form-questions-container");
+
+    let ff = document.getElementById("_form");
+    ff.addEventListener('submit', formHandler);
+
+    let cm = document.getElementById("check-modal");
+
+    async function getScore() {
+        let rs = await fetch(addr, {
+            method: "POST",
+            body: fd
+        }
+        );
+    }
+
+    async function submitForm() {
+        cm.style.visibility = "hidden";
+        let fd = new FormData(ff);
+        let rs = await fetch(addr, {
+            method: "POST",
+            body: fd
+        }
+        );
+        let data = await rs.json();
+        console.log(data);
+
+    }
+
+    async function closeForm() {
+        cm.style.visibility = "hidden";
+        ff.style.overflowY = null;
+        ff.style.height = null;
+    }
+
+    async function formHandler(e) {
+
+        e.preventDefault();
+
+        ff.style.overflowY = "clip";
+        ff.style.height = "90vh";
+        let cm = document.getElementById("check-modal");
+        cm.style.visibility = "visible";
+        // let fd = new FormData(ff);
+        // let rs = await fetch(addr, {
+        //     method: "POST",
+        //     body: fd
+        // }
+        // );
+        // let data = await rs.json();
+        // console.log(data);
+    }
+
+    async function genForm() {
+        for (i = 0; i < 30; i++) {
+            getQuestion(i);
+        }
+    }
+
+    async function getQuestion(qid) {
+
+        let rs = await fetch(addr, {
+            method: 'POST',
+
+            body: JSON.stringify({
+                "type": "GETQ",
+                "idx": qid
+            })
+        }
+        );
+
+        let data = await rs.json();
+        let q = JSON.parse(data);
+        console.log(q);
+
+        var f = document.getElementById("form-questions");
+        var sb = document.getElementById("sbutton");
+        sb.disabled = false;
+        var gb = document.getElementById("gbutton");
+        gb.style.visibility = "hidden";
+        var qLabel = document.createElement("label");
+        qLabel.innerText = q.question;
+        var sel = document.createElement("select");
+
+        sel.id = qid;
+        sel.name = "question" + qid;
+
+        q.options.forEach((v, idx) => {
+            let o = document.createElement("option");
+            o.innerText = v;
+            o.value = idx;
+            sel.appendChild(o);
+        });
+
+        f.appendChild(qLabel);
+        f.appendChild(sel);
+
+    }
+
+
+
+
+
+
+</script>
