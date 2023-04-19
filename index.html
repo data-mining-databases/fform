@@ -1,9 +1,5 @@
 <head>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
         #form-container {
             display: flex;
             align-items: center;
@@ -18,7 +14,7 @@
         }
 
         #form-questions-container {
-            width: 50%;
+            width: 50vw;
             display: flex;
             align-self: center;
         }
@@ -29,13 +25,13 @@
             align-items: flex-start;
             gap: 5px;
         }
-        
-        #form-footer {
-            display:flex;
-            width: 100%;
+
+        #form-header {
+            display: flex;
+            width: 50vw;
             justify-content: space-between;
         }
-        
+
         #form-bio {
             display: flex;
             flex-direction: column;
@@ -52,16 +48,36 @@
             top: 0;
             left: 0;
             position: absolute;
-            width: 100%;
+            width: 100vw;
             min-height: 100vh;
             visibility: hidden;
-            background-color: rgba(200, 200, 200, 0.7);
+            background-color: rgba(240, 240, 240, 1.0);
+            gap: 3vh;
+        }
+
+        #gbutton {
+            position: absolute;
+            visibility: hidden;
+        }
+
+        #score {
+            visibility: hidden;
+
+        }
+
+        #score-container {
+            visibility: hidden;
         }
 
         select {
-
             width: 25%;
             margin-bottom: 3%;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
         }
     </style>
 </head>
@@ -71,15 +87,15 @@
         action="https://script.google.com/macros/s/AKfycbwj7YDErOBfejzqm-qYJ5tzMkpEhNhQOYijDvqTi4L7e9-vG28RcyLV6V7aQJKvLjHWbA/exec">
         <div id="form-container">
             <div id="form-body">
-                <div id="form-footer">
-                <div id="form-bio">
-                <label>ФИО</label>
-                <input name="username" required>
-                <input id="fuid" name="form_user_id" hidden required>
-                </div>
-                <div id="form-name">
-                Название предмета
-                </div>
+                <div id="form-header">
+                    <div id="form-bio">
+                        <label>ФИО</label>
+                        <input name="username" required>
+                        <input id="fuid" name="form_user_id" hidden required>
+                    </div>
+                    <div id="form-name">
+                        <div id="score"></div>
+                    </div>
                 </div>
 
                 <input id="sbutton" type="submit" disabled>
@@ -87,12 +103,22 @@
                     <div id="form-questions">
                     </div>
                 </div>
-                <input id="gbutton" value="get" type="button" onClick="genForm()">
+                <input id="gbutton" value="Получить вопросы" type="button" onClick="genForm()">
             </div>
         </div>
     </form>
+    <div id="score-container">
+        <table id="score-list">
+            <tr>
+                <th>ФИО</th>
+                <th>Результат</th>
+            </tr>
+        </table>
+
+    </div>
     <div id="check-modal">
         <h3>Отправить?</h3>
+        <div>Перепройти тест будет нельзя</div>
         <div>
             <button onClick="submitForm()">Да</button>
             <button onClick="closeForm()">Нет</button>
@@ -107,34 +133,91 @@
     let uuid = crypto.randomUUID();
     let mycookie = /form_user_id=(.+)(?:[\s]|$)/gm;
     let check = mycookie.exec(document.cookie);
+    let fuid = document.getElementById("fuid");
     if (null === check) {
         document.cookie = `form_user_id=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
-        let fuid = document.getElementById("fuid");
         fuid.value = uuid;
     } else {
+        fuid.value = check[1];
 
+        const queryString = window.location.search;
+        let shsc = /(?:showscore)=(.+?)(?:&|$)/gm;
+
+        const arr = [...queryString.matchAll(shsc)];
+
+        if (arr.length && arr[0][1]) {
+            document.getElementById("score-container").style.visibility = "visible";
+            getAllScore().then(v => v.forEach(vv => {
+                let tbody = document.getElementById("score-list").getElementsByTagName('tbody')[0]
+
+                let row = tbody.insertRow();
+                row.insertCell().innerText =  vv[0];
+                row.insertCell().innerText =  `${vv[1]}/30`;
+
+            }));
+        } else {
+            getScore().then(data => {
+                console.log(data);
+                if (data.result && data.result != -1) {
+                    displayScore(data.result[0], data.result[1]);
+                } else {
+                    let gb = document.getElementById("gbutton");
+                    gb.style.visibility = "visible";
+                    gb.style.position = "relative";
+                }
+            });
+        }
     }
-    //document.cookie = `user_id=${uuid}; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
-
-    
 
     let fqc = document.getElementById("form-questions-container");
 
     let ff = document.getElementById("_form");
-    ff.addEventListener('submit', formHandler);
+    ff.addEventListener("submit", formHandler);
 
     let cm = document.getElementById("check-modal");
+    let scr = document.getElementById("score");
+
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min) + min);
+    }
+
+    function displayScore(bio, score) {
+        scr.style.visibility = "visible";
+        scr.innerText = `${bio}: ${score}/30`;
+    }
+
+    async function getAllScore() {
+        let rs = await fetch(addr, {
+            method: 'POST',
+            body: JSON.stringify({
+                "type": "GETALLS"
+            })
+        }
+        );
+        let data = await rs.json();
+        return data;
+    }
 
     async function getScore() {
         let rs = await fetch(addr, {
-            method: "POST",
-            body: fd
+            method: 'POST',
+            body: JSON.stringify({
+                "type": "GETSCORE",
+                "uid": fuid.value
+            })
         }
         );
+        let data = await rs.json();
+        return data;
     }
 
     async function submitForm() {
         cm.style.visibility = "hidden";
+        fqc.style.visibility = "hidden";
+        fqc.style.position = "absolute";
+        document.getElementById("sbutton").disabled = true;
         let fd = new FormData(ff);
         let rs = await fetch(addr, {
             method: "POST",
@@ -142,8 +225,7 @@
         }
         );
         let data = await rs.json();
-        console.log(data);
-
+        displayScore(data.result[0], data.result[1]);
     }
 
     async function closeForm() {
@@ -153,26 +235,17 @@
     }
 
     async function formHandler(e) {
-
         e.preventDefault();
-
         ff.style.overflowY = "clip";
         ff.style.height = "90vh";
-        let cm = document.getElementById("check-modal");
         cm.style.visibility = "visible";
-        // let fd = new FormData(ff);
-        // let rs = await fetch(addr, {
-        //     method: "POST",
-        //     body: fd
-        // }
-        // );
-        // let data = await rs.json();
-        // console.log(data);
     }
 
     async function genForm() {
         for (i = 0; i < 30; i++) {
-            getQuestion(i);
+            let idx = getRandomInt(0, 104);
+            console.log(idx);
+            getQuestion(idx);
         }
     }
 
