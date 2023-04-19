@@ -1,6 +1,5 @@
 <head>
     <style>
-
         * {
             font-size: 22;
         }
@@ -144,35 +143,35 @@
         fuid.value = uuid;
     } else {
         fuid.value = check[1];
-
-        const queryString = window.location.search;
-        let shsc = /(?:showscore)=(.+?)(?:&|$)/gm;
-
-        const arr = [...queryString.matchAll(shsc)];
-
-        if (arr.length && arr[0][1]) {
-            document.getElementById("score-container").style.visibility = "visible";
-            getAllScore().then(v => v.forEach(vv => {
-                let tbody = document.getElementById("score-list").getElementsByTagName('tbody')[0]
-
-                let row = tbody.insertRow();
-                row.insertCell().innerText =  vv[0];
-                row.insertCell().innerText =  `${vv[1]}/30`;
-
-            }));
-        } else {
-            getScore().then(data => {
-                console.log(data);
-                if (data.result && data.result != -1) {
-                    displayScore(data.result[0], data.result[1]);
-                } else {
-                    let gb = document.getElementById("gbutton");
-                    gb.style.visibility = "visible";
-                    gb.style.position = "relative";
-                }
-            });
-        }
     }
+
+    const queryString = window.location.search;
+    let shsc = /(?:showscore)=(.+?)(?:&|$)/gm;
+
+    const arr = [...queryString.matchAll(shsc)];
+
+    if (arr.length && arr[0][1]) {
+        document.getElementById("score-container").style.visibility = "visible";
+        getAllScore().then(v => v.forEach(vv => {
+            let tbody = document.getElementById("score-list").getElementsByTagName('tbody')[0]
+
+            let row = tbody.insertRow();
+            row.insertCell().innerText = vv[0];
+            row.insertCell().innerText = `${vv[1]}/30`;
+
+        }));
+    } else {
+        getScore().then(data => {
+            if (data.result && data.result != -1) {
+                displayScore(data.result[0], data.result[1]);
+            } else {
+                let gb = document.getElementById("gbutton");
+                gb.style.visibility = "visible";
+                gb.style.position = "relative";
+            }
+        });
+    }
+
 
     let fqc = document.getElementById("form-questions-container");
 
