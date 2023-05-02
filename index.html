@@ -4,6 +4,18 @@
             font-size: 22;
         }
 
+        body {
+            overflow-x: hidden;
+        }
+
+        .score-sub-container {
+            margin-top: 1vh;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
         #form-container {
             display: flex;
             align-items: center;
@@ -78,12 +90,25 @@
             margin-bottom: 3%;
         }
 
+        select.option {
+            width: 25%;
+        }
+
         table,
         th,
         td {
             border: 1px solid black;
         }
+
+        legend {
+            background-color: lightgrey;
+        }
+
+        fieldset {
+            /* border: none; */
+        }
     </style>
+    <script src="https://chancejs.com/chance.min.js"></script>
 </head>
 
 <body>
@@ -102,32 +127,32 @@
                     </div>
                 </div>
 
-                <input id="sbutton" type="submit" value="Отправить" disabled>
+
                 <div id="form-questions-container">
                     <div id="form-questions">
                     </div>
                 </div>
                 <input id="gbutton" value="Получить вопросы" type="button" onClick="genForm()">
+                <input id="sbutton" type="submit" value="Отправить" disabled>
             </div>
         </div>
     </form>
     <div id="score-container">
-        <table id="score-list">
-            <tr>
-                <th>ФИО</th>
-                <th>Результат</th>
-            </tr>
-        </table>
+        <div id="score-list">
+            <div>
+                Результаты
+            </div>
+            </table>
 
-    </div>
-    <div id="check-modal">
-        <h3>Отправить?</h3>
-        <div>Перепройти тест будет нельзя</div>
-        <div>
-            <button onClick="submitForm()">Да</button>
-            <button onClick="closeForm()">Нет</button>
         </div>
-    </div>
+        <div id="check-modal">
+            <h3>Отправить?</h3>
+            <div>Перепройти тест будет нельзя</div>
+            <div>
+                <button onClick="submitForm()">Да</button>
+                <button onClick="closeForm()">Нет</button>
+            </div>
+        </div>
 </body>
 
 <script>
@@ -153,15 +178,51 @@
     if (arr.length && arr[0][1]) {
         document.getElementById("score-container").style.visibility = "visible";
         getAllScore().then(v => v.forEach(vv => {
-            let tbody = document.getElementById("score-list").getElementsByTagName('tbody')[0]
 
-            let row = tbody.insertRow();
-            row.insertCell().innerText = vv[0];
-            row.insertCell().innerText = `${vv[1]}/30`;
+            let answers = vv[2];
+
+            let tbody = document.getElementById("score-list");
+
+            let score_container = document.createElement("div");
+            score_container.className = "score-sub-container";
+            let bio = document.createElement("div");
+            bio.style.border = "solid";
+            bio.style.padding = "7px";
+            bio.innerText = vv[0];
+
+            score_container.appendChild(bio);
+
+            let score = document.createElement("div");
+            score.innerText = `${vv[1]}/30`;
+
+            score_container.appendChild(score);
+
+            tbody.appendChild(score_container);
+
+            let spoiler = document.createElement("details");
+            let summary = document.createElement("summary");
+            summary.innerText = "Подробности";
+
+            let subtable = document.createElement("table");
+
+            answers.forEach((v, idx) => {
+                let subrow = subtable.insertRow();
+                subrow.style.backgroundColor = "rgba(240, 240, 240, 1.0)";
+                subrow.insertCell().innerText = `${idx+1}: ${v[0]}`;
+                let subr = subtable.insertRow();
+                subr.insertCell().innerText = v[1];
+                subr.insertCell().innerText = v[2];
+            });
+
+            spoiler.appendChild(summary);
+            spoiler.appendChild(subtable);
+
+            tbody.appendChild(spoiler);
 
         }));
     } else {
         getScore().then(data => {
+            // console.log(data);
             if (data.result && data.result != -1) {
                 displayScore(data.result[0], data.result[1]);
             } else {
@@ -222,13 +283,16 @@
         fqc.style.visibility = "hidden";
         fqc.style.position = "absolute";
         document.getElementById("sbutton").disabled = true;
+
         let fd = new FormData(ff);
+        // console.log(JSON.stringify(fd));
         let rs = await fetch(addr, {
             method: "POST",
             body: fd
         }
         );
         let data = await rs.json();
+        // console.log(data);
         displayScore(data.result[0], data.result[1]);
     }
 
@@ -240,56 +304,96 @@
 
     async function formHandler(e) {
         e.preventDefault();
+
         ff.style.overflowY = "clip";
         ff.style.height = "90vh";
         cm.style.visibility = "visible";
     }
 
     async function genForm() {
-        for (i = 0; i < 30; i++) {
-            let idx = getRandomInt(0, 104);
-            console.log(idx);
-            getQuestion(idx);
-        }
+        var gb = document.getElementById("gbutton");
+        gb.style.visibility = "hidden";
+        let iters = [];
+        let vals = chance.unique(chance.integer, 30, { min: 0, max: 103 });
+        // for (i = 0; i < vals.length; i++) {
+
+        await getQuestions(vals);
+        // console.log(idx);
+        // iters.push(new Promise((resolve) => {
+        //     resolve();
+        // }));
+        // }
+        // Promise.all(iters).then(v => {
+        var sb = document.getElementById("sbutton");
+        sb.disabled = false;
+        // });
     }
 
-    async function getQuestion(qid) {
+    async function getQuestions(qid) {
 
         let rs = await fetch(addr, {
             method: 'POST',
 
             body: JSON.stringify({
                 "type": "GETQ",
-                "idx": qid
+                "idxs": qid
             })
         }
         );
 
-        let data = await rs.json();
-        let q = JSON.parse(data);
-        console.log(q);
+        let qs = await rs.json();
 
         var f = document.getElementById("form-questions");
-        var sb = document.getElementById("sbutton");
-        sb.disabled = false;
-        var gb = document.getElementById("gbutton");
-        gb.style.visibility = "hidden";
-        var qLabel = document.createElement("label");
-        qLabel.innerText = q.question;
-        var sel = document.createElement("select");
 
-        sel.id = qid;
-        sel.name = "question" + qid;
+        qs.questions.forEach((q, qidx) => {
 
-        q.options.forEach((v, idx) => {
-            let o = document.createElement("option");
-            o.innerText = v;
-            o.value = idx;
-            sel.appendChild(o);
+            // var qLabel = document.createElement("label");
+            // qLabel.innerText = q.question;
+            // var sel = document.createElement("select");
+
+            // sel.id = qid;
+            // sel.name = "question" + qid;
+
+            let fls = document.createElement("fieldset");
+            fls.className = "question-radio";
+            let lgn = document.createElement("legend");
+
+
+            fls.append(lgn);
+
+
+
+            q.options.forEach((v, idx) => {
+                // let o = document.createElement("option");
+                // o.innerText = v;
+                // o.value = idx;
+                // sel.appendChild(o);
+
+                let container = document.createElement("div");
+
+                let radinp = document.createElement("input");
+                radinp.type = "radio";
+                radinp.id = idx;
+                radinp.name = "question" + qidx;
+                radinp.value = idx;
+                let lbl = document.createElement("label");
+                lbl.innerText = v;
+                lbl.setAttribute("for", idx);
+
+                container.appendChild(radinp);
+                container.appendChild(lbl);
+
+                fls.appendChild(container);
+
+            });
+
+
+            let fq = document.getElementById("form-questions");
+            lgn.innerText = `${fq.children.length+1} ${q.question}`;
+            // f.appendChild(qLabel);
+            f.appendChild(fls);
+
         });
-
-        f.appendChild(qLabel);
-        f.appendChild(sel);
 
     }
 
