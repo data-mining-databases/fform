@@ -51,12 +51,16 @@
         }
 
         #score-list>div:first-of-type {
-            margin-left: 15vw;
+            /* margin-left: 15vw; */
+            align-self: center;
         }
 
         #score-list {
             /* overflow-x: scroll; */
-            margin-left: 15vw;
+            /* margin-left: 15vw; */
+            display: flex;
+            flex-direction: column;
+            width: 45vw;
         }
 
 
@@ -243,6 +247,7 @@
             score.innerText = `${vv[1]}/30`;
 
             tcontainer.style.display = "flex";
+            tcontainer.style.justifyContent = "space-between";
             tcontainer.appendChild(bio);
             tcontainer.appendChild(score);
 
